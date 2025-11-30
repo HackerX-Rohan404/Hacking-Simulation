@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>⚠ CRITICAL: SYSTEM BREACH DETECTED ⚠ — SECURITY SIMULATION</title>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#000;
+    --red:#ff1e1e;
+    --neon:#00ff99;
+    --muted:#9aa6b2;
+    --glass: rgba(255,255,255,0.03);
+    --blue: #0066ff;
+  }
+  html,body{height:100%;margin:0;background:#000;color:var(--neon);font-family:Inter,system-ui,Arial;overflow:hidden}
+  /* Container */
+  .wrap{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:10px 12px;box-sizing:border-box}
+  /* Intro: Big tap to start */
+  .start-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;background:linear-gradient(180deg,rgba(0,0,0,0.85),rgba(0,0,0,0.6));backdrop-filter: blur(2px);flex-direction:column;padding:20px;text-align:center}
+  .start-btn{background:linear-gradient(90deg,var(--red),#ff6b6b);border:0;color:white;padding:16px 22px;border-radius:12px;font-weight:700;font-size:18px;box-shadow:0 8px 30px rgba(255,0,0,0.18);cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;}
+  .start-btn:hover{transform:scale(1.05);box-shadow:0 12px 40px rgba(255,0,0,0.3);}
+  .note{color:var(--muted);margin-top:10px;font-size:13px;max-width:420px;line-height:1.5;}
+  /* canvas layers */
+  canvas.bg-matrix{position:fixed;left:0;top:0;width:100%;height:100%;z-index:1;mix-blend-mode:screen;pointer-events:none}
+  canvas.bg-rain{position:fixed;left:0;top:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:0.85}
+  /* main alert box */
+  header.main-alert{position:relative;z-index:40;margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .big-title{font-family:'VT323', monospace;font-size:34px;color:var(--red);text-align:center;text-shadow:0 0 30px rgba(255,0,0,0.12);letter-spacing:2px;animation: pulse 2s infinite;}
+  @keyframes pulse {
+    0% { text-shadow: 0 0 10px rgba(255,0,0,0.3); }
+    50% { text-shadow: 0 0 20px rgba(255,0,0,0.6), 0 0 30px rgba(255,0,0,0.4); }
+    100% { text-shadow: 0 0 10px rgba(255,0,0,0.3); }
+  }
+  .sub{color:var(--neon);font-family:'Share Tech Mono',monospace;font-size:14px}
+  /* terminal box */
+  .terminal{width:100%;max-width:760px;background:linear-gradient(180deg,rgba(0,0,0,0.55),rgba(0,0,0,0.35));border:1px solid rgba(255,255,255,0.03);padding:14px;border-radius:10px;margin-top:14px;box-shadow:0 10px 40px rgba(0,0,0,0.6);z-index:40;position:relative;}
+  .terminal::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(rgba(0,255,153,0.03) 50%, rgba(0,0,0,0.1) 50%);background-size:100% 4px;z-index:-1;pointer-events:none;}
+  .terminal pre{margin:0;font-family:'Share Tech Mono',monospace;font-size:15px;line-height:1.4;color:var(--neon);white-space:pre-wrap;word-break:break-word}
+  /* progress / bars */
+  .bar-wrap{width:100%;max-width:760px;margin-top:12px;z-index:40}
+  .bar{height:14px;border-radius:8px;background:rgba(255,255,255,0.03);overflow:hidden;border:1px solid rgba(255,0,0,0.08);position:relative;}
+  .bar .fill{height:100%;width:0%;background:linear-gradient(90deg,var(--neon),#80ffb8);box-shadow:0 4px 24px rgba(0,255,153,0.08);position:relative;overflow:hidden;}
+  .bar .fill::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);animation: shimmer 2s infinite;}
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  /* countdown */
+  .count{margin-top:12px;color:var(--red);font-weight:700;font-family:'VT323',monospace;font-size:30px;text-shadow:0 0 20px rgba(255,0,0,0.06);z-index:40;animation: blink 1s infinite;}
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  /* popups */
+  .popup{position:fixed;background:var(--red);color:white;padding:10px 12px;border-radius:8px;border:3px solid rgba(255,255,255,0.05);z-index:80;font-weight:700;font-family:Inter,system-ui;font-size:14px;box-shadow:0 12px 40px rgba(255,0,0,0.12);animation: popIn 0.3s, shake 0.5s;}
+  @keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  }
+  /* glitch */
+  .glitch{position:fixed;inset:0;z-index:30;pointer-events:none;mix-blend-mode:overlay;opacity:0.18;background-image:repeating-linear-gradient(45deg,rgba(255,0,0,0.03) 0 1px,transparent 1px 4px)}
+  /* safety tips toggle */
+  .tips-btn{position:fixed;right:12px;bottom:12px;background:#071018;color:var(--neon);padding:10px 12px;border-radius:10px;border:1px solid rgba(0,255,153,0.08);z-index:999;font-weight:700;cursor:pointer;transition:background 0.3s;}
+  .tips-btn:hover{background:#0a1a25;}
+  .tips-panel{position:fixed;right:12px;bottom:64px;width:320px;background:#071018;border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.03);color:var(--muted);z-index:999;box-shadow:0 10px 30px rgba(0,0,0,0.5);}
+  .tips-panel h4{color:var(--neon);margin:0 0 8px;font-family:'Share Tech Mono',monospace}
+  .tips-panel ul{margin:0;padding-left:18px}
+  .tips-panel li{margin:6px 0;color:#cfeee0;line-height:1.4;}
+  /* system modules */
+  .modules-container{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;width:100%;max-width:760px;margin-top:15px;z-index:40;}
+  .module{background:linear-gradient(180deg,rgba(0,0,0,0.4),rgba(0,0,0,0.2));border:1px solid rgba(255,255,255,0.03);border-radius:8px;padding:10px;font-size:13px;font-family:'Share Tech Mono',monospace;}
+  .module-title{color:var(--blue);margin-bottom:5px;font-weight:bold;}
+  .module-status{color:var(--neon);}
+  /* mobile adjustments */
+  @media (max-width:520px){
+    .big-title{font-size:28px}
+    .terminal pre{font-size:13px}
+    .tips-panel{width:92%}
+    .modules-container{grid-template-columns:1fr;}
+  }
+  /* emergency overlay */
+  .emergency-overlay{position:fixed;inset:0;background:radial-gradient(circle, rgba(255,0,0,0.3) 0%, transparent 70%);z-index:25;pointer-events:none;opacity:0;transition:opacity 0.5s;}
+  /* connection lines */
+  .connection-line{position:fixed;height:1px;background:linear-gradient(90deg, transparent, var(--neon), transparent);z-index:5;transform-origin:left;box-shadow:0 0 5px var(--neon);}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="wrap">
+  <!-- Start overlay (must tap to start audio & fullscreen) -->
+  <div class="start-screen" id="startScreen">
+    <h1 style="color:var(--red);font-family:'VT323',monospace;font-size:38px;margin:0">⚠ CRITICAL BREACH</h1>
+    <p style="color:var(--neon);font-family:'Share Tech Mono',monospace;margin:6px 0 18px">Tap to START — Enter fullscreen & trigger alarm</p>
+    <button class="start-btn" id="startBtn">TAP TO START</button>
+    <div class="note">Siren will play loudly. Use headphones on full sound for maximum effect. This is a security simulation — no real hacking occurs. Press 'S' to stop at any time.</div>
+  </div>
+
+  <!-- visual layers -->
+  <canvas id="matrix" class="bg-matrix"></canvas>
+  <canvas id="rain2" class="bg-rain"></canvas>
+  <div class="glitch" aria-hidden="true"></div>
+  <div class="emergency-overlay" id="emergencyOverlay"></div>
+
+  <!-- main content -->
+  <header class="main-alert" role="banner">
+    <div class="big-title">⚠ SYSTEM BREACH: DATA COMPROMISED</div>
+    <div class="sub">REMOTE ACCESS DETECTED — DEVICE: COMPROMISED — ACCESS LEVEL: <span style="color:#80ffb8">ROOT</span></div>
+  </header>
+
+  <section class="terminal" role="main" aria-live="polite">
+    <pre id="termText">
+</pre>
+  </section>
+
+  <div class="modules-container" id="modulesContainer">
+    <div class="module">
+      <div class="module-title">CAMERA MODULE</div>
+      <div class="module-status" id="cameraStatus">Initializing...</div>
+    </div>
+    <div class="module">
+      <div class="module-title">LOCATION TRACKING</div>
+      <div class="module-status" id="locationStatus">Acquiring GPS...</div>
+    </div>
+    <div class="module">
+      <div class="module-title">DATA EXFILTRATION</div>
+      <div class="module-status" id="dataStatus">Connecting...</div>
+    </div>
+    <div class="module">
+      <div class="module-title">NETWORK CONTROL</div>
+      <div class="module-status" id="networkStatus">Scanning...</div>
+    </div>
+  </div>
+
+  <div class="bar-wrap" aria-hidden="false">
+    <div class="bar" id="bar1"><div class="fill" id="fill1"></div></div>
+  </div>
+
+  <div class="count" id="count">SYSTEM MELTDOWN IN: 15s</div>
+</div>
+
+<!-- safety tips toggle -->
+<button class="tips-btn" id="tipsBtn">SAFETY • सुरक्षित</button>
+<div class="tips-panel" id="tipsPanel" style="display:none">
+  <h4>Quick Safety — EN / MR</h4>
+  <ul>
+    <li><strong>EN:</strong> Don't share OTPs or passwords. Use 2FA (auth app).</li>
+    <li><strong>MR:</strong> OTP/पासवर्ड कधीही शेअर करू नका. 2FA वापरा.</li>
+    <li><strong>EN:</strong> Update apps & OS; uninstall unknown APKs.</li>
+    <li><strong>MR:</strong> अॅप व OS अपडेट ठेवा; अनोळखी APK काढा.</li>
+    <li><strong>EN:</strong> If hacked: disconnect, change passwords from safe device, call 1930.</li>
+    <li><strong>MR:</strong> हॅक झाल्यास इंटरनेट तोडा, पासवर्ड बदला, 1930 वर फोन करा.</li>
+  </ul>
+</div>
+
+<!-- dynamic popups container -->
+<div id="popArea"></div>
+
+<!-- audio elements (will be started via user gesture) -->
+<audio id="siren" preload="auto">
+  <source src="https://actions.google.com/sounds/v1/alarms/siren.ogg" type="audio/ogg">
+  <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
+</audio>
+<audio id="fx" preload="auto">
+  <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+</audio>
+<audio id="glitchvox" preload="auto">
+  <source src="https://actions.google.com/sounds/v1/alarms/bugle_tune.ogg" type="audio/ogg">
+</audio>
+
+<script>
+/* ---------- helpers ---------- */
+const startBtn = document.getElementById('startBtn');
+const startScreen = document.getElementById('startScreen');
+const siren = document.getElementById('siren');
+const fx = document.getElementById('fx');
+const glitchvox = document.getElementById('glitchvox');
+const term = document.getElementById('termText');
+const fill1 = document.getElementById('fill1');
+const countEl = document.getElementById('count');
+const popArea = document.getElementById('popArea');
+const tipsBtn = document.getElementById('tipsBtn');
+const tipsPanel = document.getElementById('tipsPanel');
+const emergencyOverlay = document.getElementById('emergencyOverlay');
+const modulesContainer = document.getElementById('modulesContainer');
+const cameraStatus = document.getElementById('cameraStatus');
+const locationStatus = document.getElementById('locationStatus');
+const dataStatus = document.getElementById('dataStatus');
+const networkStatus = document.getElementById('networkStatus');
+
+tipsBtn.onclick = ()=> tipsPanel.style.display = tipsPanel.style.display==='none' ? 'block' : 'none';
+
+/* ensure resume audio on user tap, request fullscreen */
+async function startPrank(){
+  try{
+    // hide start screen
+    startScreen.style.display='none';
+    // request fullscreen
+    if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+    // play audio (loop)
+    await siren.play().catch(()=>{});
+    siren.loop = true;
+    // play fx occasionally
+    setInterval(()=>{ fx.currentTime=0; fx.play().catch(()=>{}); }, 2200);
+    setInterval(()=>{ glitchvox.currentTime=0; glitchvox.play().catch(()=>{}); }, 4200);
+    // vibrate
+    if(navigator.vibrate) navigator.vibrate([200,100,200,100]);
+    // start terminal & animations
+    runTerminal();
+    startCountdown();
+    launchPopups();
+    animateFill();
+    startModules();
+    createConnectionLines();
+  }catch(e){
+    console.warn('startPrank err',e);
+  }
+}
+
+/* user must tap */
+startBtn.addEventListener('click', startPrank);
+
+/* ---------- MATRIX + RAIN canvases ---------- */
+(function(){
+  const c = document.getElementById('matrix');
+  const r = document.getElementById('rain2');
+  const ctx = c.getContext('2d');
+  const ctx2 = r.getContext('2d');
+  function resize(){ c.width = r.width = innerWidth; c.height = r.height = innerHeight; init(); }
+  addEventListener('resize', resize);
+  const letters = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ10";
+  let fontSize = 18;
+  let columns, drops;
+  function init(){
+    fontSize = Math.max(12, Math.floor(innerWidth/60));
+    columns = Math.floor(innerWidth / fontSize);
+    drops = new Array(columns).fill(0).map(()=>Math.floor(Math.random()*innerHeight/fontSize));
+  }
+  init();
+
+  function draw(){
+    // matrix green-ish behind
+    ctx.fillStyle='rgba(0,0,0,0.06)';
+    ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#00ff77';
+    ctx.font = fontSize+'px monospace';
+    for(let i=0;i<columns;i++){
+      const text = letters[Math.floor(Math.random()*letters.length)];
+      const opacity = Math.random() > 0.1 ? 1 : 0.7;
+      ctx.fillStyle = `rgba(0, 255, 119, ${opacity})`;
+      ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+      if(drops[i]*fontSize > c.height && Math.random() > 0.975) drops[i]=0;
+      drops[i]++;
+    }
+
+    // rain red overlay
+    ctx2.clearRect(0,0,r.width,r.height);
+    for(let i=0;i<200;i++){
+      ctx2.fillStyle = 'rgba(255,0,30,'+ (Math.random()*0.08) +')';
+      const x = Math.random()*r.width;
+      const y = Math.random()*r.height;
+      ctx2.fillRect(x,y,Math.random()*2+1,Math.random()*20+1);
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ---------- Terminal typewriter & sequences ---------- */
+const lines = [
+  ">>> INITIALIZING BREACH PROTOCOL...",
+  ">>> VERIFYING EXPLOITS...",
+  ">>> SCANNING NETWORK INTERFACES...",
+  ">>> IP TRACED: 192.168.***.***",
+  ">>> LOCATING OPEN PORTS: 22, 80, 443, 5555",
+  ">>> EXPLOIT: CVE-2023-4863 -> SUCCESS",
+  ">>> GAINING SHELL ACCESS... LEVEL: ROOT",
+  ">>> STARTING DATA EXFILTRATION",
+  ">>> CAMERA: ENABLED",
+  ">>> MICROPHONE: ENABLED",
+  ">>> GPS TRACKING: ACTIVE",
+  ">>> BRUTE-FORCE: testing 837,284 combos",
+  ">>> PASSWORD FOUND -> ********",
+  ">>> EXTRACTING FILES: photos/msgs/notes",
+  ">>> UPLOADING TO REMOTE SERVER",
+  ">>> DEVICE COMPROMISED ✔",
+  ">>> SYSTEM MELTDOWN IMMINENT"
+];
+let idx=0;
+function runTerminal(){
+  (function nextLine(){
+    if(idx < lines.length){
+      let line = lines[idx++] + "\n";
+      term.innerText += line;
+      term.scrollTop = term.scrollHeight;
+      // small glitch flash occasionally
+      if(Math.random()>0.85) { 
+        document.body.style.filter='hue-rotate(10deg)'; 
+        setTimeout(()=>document.body.style.filter='none',120); 
+      }
+      setTimeout(nextLine, 900 + Math.random()*400);
+    }else{
+      // keep printing noise lines
+      setInterval(()=>{ 
+        term.innerText += ">>> " + generateRandomHex(8) + ":" + generateRandomHex(16) + "\n"; 
+        term.scrollTop=term.scrollHeight; 
+      }, 1200);
+    }
+  })();
+}
+
+function generateRandomHex(length) {
+  let result = '';
+  const characters = '0123456789ABCDEF';
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
+
+/* ---------- Progress bar animation ---------- */
+function animateFill(){
+  let pct = 0;
+  const step = 1 + Math.random()*4;
+  const t = setInterval(()=>{
+    pct += step;
+    if(pct>100) pct=100;
+    fill1.style.width = pct+'%';
+    if(pct>=100) clearInterval(t);
+  }, 120);
+}
+
+/* ---------- countdown ---------- */
+let ct = 15;
+function startCountdown(){
+  const interval = setInterval(()=>{
+    ct--;
+    if(ct<0) ct=0;
+    countEl.innerText = "SYSTEM MELTDOWN IN: " + ct + "s";
+    
+    // Emergency effects intensify as countdown decreases
+    if(ct <= 5) {
+      emergencyOverlay.style.opacity = (6 - ct) * 0.2;
+      if(navigator.vibrate) navigator.vibrate(200);
+    }
+    
+    if(ct===0){
+      // climax effect
+      document.body.style.background = "linear-gradient(180deg,#330000,#000000)";
+      emergencyOverlay.style.opacity = "1";
+      popupBig("!! SYSTEM MELTDOWN !!");
+      try{ navigator.vibrate && navigator.vibrate([400,200,400]); }catch(e){}
+      // restart countdown
+      setTimeout(() => {
+        ct=15;
+        document.body.style.background = "#000";
+        emergencyOverlay.style.opacity = "0";
+      }, 3000);
+    }
+  },1000);
+}
+
+/* ---------- popups ---------- */
+function popupBig(txt){
+  const p = document.createElement('div');
+  p.className='popup';
+  p.style.top = (10 + Math.random()*70) + "%";
+  p.style.left = (5 + Math.random()*60) + "%";
+  p.style.transform = "rotate(" + (Math.random()*6-3) + "deg)";
+  p.innerText = txt;
+  popArea.appendChild(p);
+  setTimeout(()=>p.remove(),2200);
+}
+function launchPopups(){
+  setInterval(()=>{ popupBig("⚠ HACK IN PROGRESS ⚠"); }, 2600 + Math.random()*500);
+  setInterval(()=>{ popupBig("⚠ REMOTE SHELL OPENED"); }, 4200 + Math.random()*800);
+}
+
+/* ---------- random small popups (for chaos) ---------- */
+(function randomChaos(){
+  setInterval(()=>{ 
+    const el = document.createElement('div');
+    el.className='popup';
+    el.style.fontSize='13px';
+    el.style.padding='8px 10px';
+    el.style.top = (10 + Math.random()*70) + "%";
+    el.style.left = (10 + Math.random()*60) + "%";
+    el.innerText = ["ERROR: 0xC0FFEE","ALERT: CONNECTION LOST","SECURITY: BYPASSED"][Math.floor(Math.random()*3)];
+    popArea.appendChild(el);
+    setTimeout(()=>el.remove(),1700 + Math.random()*1100);
+  }, 1400);
+})();
+
+/* ---------- System Modules ---------- */
+function startModules() {
+  // Camera module
+  setTimeout(() => {
+    cameraStatus.textContent = "ACTIVE - Capturing...";
+    cameraStatus.style.color = "#ff1e1e";
+  }, 3000);
+  
+  // Location module
+  setTimeout(() => {
+    locationStatus.textContent = "TRACKING - GPS acquired";
+    locationStatus.style.color = "#ff1e1e";
+  }, 5000);
+  
+  // Data module
+  setTimeout(() => {
+    dataStatus.textContent = "EXFILTRATING - 47% complete";
+    dataStatus.style.color = "#ff1e1e";
+  }, 7000);
+  
+  // Network module
+  setTimeout(() => {
+    networkStatus.textContent = "CONTROLLED - All traffic";
+    networkStatus.style.color = "#ff1e1e";
+  }, 9000);
+  
+  // Update data progress
+  setInterval(() => {
+    if (dataStatus.textContent.includes("EXFILTRATING")) {
+      const match = dataStatus.textContent.match(/(\d+)%/);
+      if (match) {
+        let percent = parseInt(match[1]);
+        if (percent < 100) {
+          percent += Math.floor(Math.random() * 5) + 1;
+          if (percent > 100) percent = 100;
+          dataStatus.textContent = `EXFILTRATING - ${percent}% complete`;
+        }
+      }
+    }
+  }, 1500);
+}
+
+/* ---------- Connection Lines Effect ---------- */
+function createConnectionLines() {
+  setInterval(() => {
+    // Create connection lines between modules
+    if (Math.random() > 0.7) {
+      const line = document.createElement('div');
+      line.className = 'connection-line';
+      
+      // Random positions
+      const startX = Math.random() * window.innerWidth;
+      const startY = Math.random() * window.innerHeight;
+      const endX = Math.random() * window.innerWidth;
+      const endY = Math.random() * window.innerHeight;
+      
+      // Calculate distance and angle
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      
+      // Set line properties
+      line.style.width = length + 'px';
+      line.style.left = startX + 'px';
+      line.style.top = startY + 'px';
+      line.style.transform = `rotate(${angle}deg)`;
+      line.style.opacity = '0';
+      
+      document.body.appendChild(line);
+      
+      // Animate in
+      setTimeout(() => {
+        line.style.opacity = '0.7';
+        line.style.transition = 'opacity 0.3s';
+      }, 10);
+      
+      // Remove after animation
+      setTimeout(() => {
+        line.style.opacity = '0';
+        setTimeout(() => {
+          if (line.parentNode) {
+            line.parentNode.removeChild(line);
+          }
+        }, 300);
+      }, 800);
+    }
+  }, 500);
+}
+
+/* ---------- attempt auto-play fallback (some browsers block) ---------- */
+(async function tryPlayHidden(){
+  try{
+    await siren.play();
+    siren.pause();
+    siren.currentTime=0;
+  }catch(e){}
+})();
+
+/* ---------- accessibility: stop button (press anywhere 'S' to stop sound) ---------- */
+document.addEventListener('keydown', e=>{
+  if(e.key.toLowerCase()==='s'){ 
+    siren.pause(); 
+    fx.pause(); 
+    glitchvox.pause(); 
+    if(navigator.vibrate) navigator.vibrate(0); // Stop vibration
+    alert('Simulation stopped. This was a security awareness demonstration.'); 
+  }
+});
+
+/* ---------- vibration quick: also vibrate when page first loads (if allowed) ---------- */
+try{ navigator.vibrate && navigator.vibrate([200,100,200]); }catch(e){}
+
+/* ---------- mobile safety: prevent accidental navigation by capturing back gesture? can't override browser, but we warn on beforeunload ---------- */
+window.addEventListener('beforeunload', function (e) {
+  e.preventDefault();
+  e.returnValue = '';
+});
+</script>
+
+</body>
+  </html>
